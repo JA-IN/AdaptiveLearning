@@ -8,6 +8,7 @@ import SocialProofSection from "./components/SocialProofSection";
 import CallToActionSection from "./components/CallToActionSection";
 import Navbar from "./components/NavBar";
 
+
 const LandingPage = () => {
   const navigate = useNavigate();
 
@@ -21,9 +22,12 @@ const LandingPage = () => {
       <Navbar />
       {/* Hero Section */}
       <HeroSection onStartLearning={handleStartLearning} />
+      {/* <div className="py-8 overflow-hidden opacity-30">
+      </div> */}
 
       {/* Feature Cards Section */}
       <FeatureCards />
+
       {/* Technology Showcase */}
       <TechnologyShowcase />
 

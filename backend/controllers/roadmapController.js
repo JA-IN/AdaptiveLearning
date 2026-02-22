@@ -23,7 +23,7 @@ export async function generateRoadmap(req, res) {
 
     // Generate roadmap using Gemini AI
     const roadmapData = await geminiService.generateRoadmap(subject, goal, level);
-    
+
     console.log(`📦 Roadmap generated successfully: ${roadmapData.roadmap?.title || 'Untitled'}`);
     console.log(`   Modules: ${roadmapData.roadmap?.totalModules || 0}`);
     console.log(`   Est. Hours: ${roadmapData.roadmap?.estimatedTotalHours || 0}`);
@@ -87,7 +87,49 @@ export async function getRoadmap(req, res) {
   }
 }
 
+/**
+ * Generate study material for a module
+ * POST /api/roadmap/study-material
+ * Body: { moduleTitle, topics, subject }
+ */
+export async function generateStudyMaterial(req, res) {
+  try {
+    const { moduleTitle, topics, subject } = req.body;
+
+    if (!moduleTitle || !subject) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: moduleTitle and subject are required'
+      });
+    }
+
+    console.log(`\n📚 Generating study material for: ${moduleTitle} (${subject})`);
+
+    const studyData = await geminiService.generateStudyMaterial(
+      moduleTitle,
+      topics || [],
+      subject
+    );
+
+    console.log(`✅ Study material generated: ${studyData.sections?.length || 0} sections\n`);
+
+    res.json({
+      success: true,
+      data: studyData
+    });
+
+  } catch (error) {
+    console.error('Error in generateStudyMaterial:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate study material. Please try again.',
+      details: error.message
+    });
+  }
+}
+
 export default {
   generateRoadmap,
-  getRoadmap
+  getRoadmap,
+  generateStudyMaterial
 };

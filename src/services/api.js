@@ -52,7 +52,7 @@ async function fetchAPI(endpoint, options = {}) {
  */
 export async function generateRoadmap(subject, goal, level) {
   const sessionId = getSessionId();
-  
+
   const response = await fetchAPI('/roadmap/generate', {
     method: 'POST',
     body: JSON.stringify({ subject, goal, level, sessionId }),
@@ -73,7 +73,7 @@ export async function generateRoadmap(subject, goal, level) {
  */
 export async function getRoadmap() {
   const sessionId = getSessionId();
-  
+
   try {
     const response = await fetchAPI(`/roadmap/${sessionId}`);
     return response.data;
@@ -95,7 +95,7 @@ export async function getRoadmap() {
  */
 export async function generateQuestion(moduleId, moduleTitle, topics) {
   const sessionId = getSessionId();
-  
+
   const response = await fetchAPI('/quiz/question', {
     method: 'POST',
     body: JSON.stringify({ sessionId, moduleId, moduleTitle, topics }),
@@ -113,7 +113,7 @@ export async function generateQuestion(moduleId, moduleTitle, topics) {
  */
 export async function evaluateAnswer(moduleId, questionId, userAnswer) {
   const sessionId = getSessionId();
-  
+
   const response = await fetchAPI('/quiz/evaluate', {
     method: 'POST',
     body: JSON.stringify({ sessionId, moduleId, questionId, userAnswer }),
@@ -130,7 +130,7 @@ export async function evaluateAnswer(moduleId, questionId, userAnswer) {
  */
 export async function getModuleReport(moduleId, moduleTitle) {
   const sessionId = getSessionId();
-  
+
   const response = await fetchAPI('/quiz/report', {
     method: 'POST',
     body: JSON.stringify({ sessionId, moduleId, moduleTitle }),
@@ -146,8 +146,26 @@ export async function getModuleReport(moduleId, moduleTitle) {
  */
 export async function getModuleProgress(moduleId) {
   const sessionId = getSessionId();
-  
+
   const response = await fetchAPI(`/quiz/progress/${sessionId}/${moduleId}`);
+  return response.data;
+}
+
+// ============== STUDY MATERIAL API ==============
+
+/**
+ * Generate study material for a module
+ * @param {string} moduleTitle - Module title
+ * @param {array} topics - Array of topics for the module
+ * @param {string} subject - The learning subject
+ * @returns {Promise<object>} Study material data
+ */
+export async function generateStudyMaterial(moduleTitle, topics, subject) {
+  const response = await fetchAPI('/roadmap/study-material', {
+    method: 'POST',
+    body: JSON.stringify({ moduleTitle, topics, subject }),
+  });
+
   return response.data;
 }
 
@@ -195,6 +213,7 @@ export default {
   evaluateAnswer,
   getModuleReport,
   getModuleProgress,
+  generateStudyMaterial,
   checkBackendHealth,
   clearSession,
   getSessionInfo,

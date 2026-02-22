@@ -1,5 +1,6 @@
 import React from "react";
 import Button from "../../../components/ui/Button";
+import Icon from "../../../components/AppIcon";
 import pythonLogo from "../../../../public/assets/logo/python.svg";
 import javascriptLogo from "../../../../public/assets/logo/javascript.svg";
 import reactLogo from "../../../../public/assets/logo/react.svg";
@@ -8,11 +9,12 @@ import nodeLogo from "../../../../public/assets/logo/nodejs.svg";
 const TechnologyCard = ({
   technology,
   isSelected = false,
-  onSelect = () => {},
+  onSelect = () => { },
   className = "",
 }) => {
-  // Map technology name to imported SVG
-  const getTechnologySVG = (tech) => {
+  // Map technology name to imported SVG or Lucide icon
+  const getTechnologyVisual = (tech) => {
+    // SVG logo map for tech subjects
     const svgMap = {
       Python: pythonLogo,
       JavaScript: javascriptLogo,
@@ -20,39 +22,64 @@ const TechnologyCard = ({
       "Node.js": nodeLogo,
     };
 
+    // Lucide icon map for IKS subjects
+    const iconMap = {
+      History: { name: "Landmark", color: "text-amber-400" },
+      Economics: { name: "TrendingUp", color: "text-emerald-400" },
+      Geography: { name: "Globe", color: "text-blue-400" },
+      Politics: { name: "Scale", color: "text-rose-400" },
+      Mahabharata: { name: "Swords", color: "text-orange-400" },
+      Ramayana: { name: "Crown", color: "text-yellow-400" },
+    };
+
+    // Check for SVG logo first
     const svgSrc = svgMap[tech];
-    if (!svgSrc) {
+    if (svgSrc) {
+      return <img src={svgSrc} alt={tech} className="w-12 h-12 object-contain" />;
+    }
+
+    // Check for Lucide icon
+    const iconInfo = iconMap[tech];
+    if (iconInfo) {
       return (
-        <svg
-          viewBox="0 0 128 128"
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-12 h-12"
-        >
-          <rect width="128" height="128" fill="gray" />
-          <text
-            x="50%"
-            y="50%"
-            dominantBaseline="middle"
-            textAnchor="middle"
-            fill="white"
-          >
-            Tech
-          </text>
-        </svg>
+        <Icon
+          name={iconInfo.name}
+          size={32}
+          className={iconInfo.color}
+        />
       );
     }
 
-    return <img src={svgSrc} alt={tech} className="w-12 h-12 object-contain" />;
+    // Fallback
+    return (
+      <svg
+        viewBox="0 0 128 128"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-12 h-12"
+      >
+        <rect width="128" height="128" fill="gray" />
+        <text
+          x="50%"
+          y="50%"
+          dominantBaseline="middle"
+          textAnchor="middle"
+          fill="white"
+        >
+          ?
+        </text>
+      </svg>
+    );
   };
+
+  const isIKS = technology?.category === "iks";
 
   return (
     <div
       className={`
         relative bg-[#171717] border border-[#737373] rounded-md transition-all duration-300 cursor-pointer group 
-        ${
-          isSelected
-            ? "border-primary/60 neon-glow bg-primary/5 shadow-[5px_5px_0px_0px_rgba(109,40,217)]"
-            : "border-purple-500/20 hover:border-purple-500/40 hover:shadow-glass-lg"
+        ${isSelected
+          ? "border-primary/60 neon-glow bg-primary/5 shadow-[5px_5px_0px_0px_rgba(109,40,217)]"
+          : "border-purple-500/20 hover:border-purple-500/40 hover:shadow-glass-lg"
         }
         ${className}
       `}
@@ -66,15 +93,16 @@ const TechnologyCard = ({
       )}
 
       <div className="p-6">
-        {/* Technology SVG */}
+        {/* Technology Visual */}
         <div
           className={`
             w-16 h-16 rounded-xl flex items-center justify-center mb-3 mx-auto
+            ${isIKS ? "bg-white/5" : ""}
             ${isSelected ? "neon-glow" : "group-hover:scale-110"}
             transition-transform duration-300
           `}
         >
-          {getTechnologySVG(technology?.name)}
+          {getTechnologyVisual(technology?.name)}
         </div>
 
         {/* Technology Name */}
@@ -90,7 +118,7 @@ const TechnologyCard = ({
         {/* Use Cases */}
         <div className="mb-4">
           <h4 className="text-xs font-medium text-foreground mb-2">
-            Popular for:
+            {isIKS ? "Useful for:" : "Popular for:"}
           </h4>
           <div className="flex flex-wrap gap-1">
             {technology?.useCases?.slice(0, 3)?.map((useCase, index) => (
@@ -128,11 +156,10 @@ const TechnologyCard = ({
         <Button
           variant={isSelected ? "default" : "outline"}
           size="sm"
-          className={`w-full transition-all duration-300  ${
-            isSelected ? "neon-glow" : "hover:border-primary/50"
-          }`}
+          className={`w-full transition-all duration-300  ${isSelected ? "neon-glow" : "hover:border-primary/50"
+            }`}
         >
-          {isSelected ? "Selected" : "Select Technology"}
+          {isSelected ? "Selected" : isIKS ? "Select Subject" : "Select Technology"}
         </Button>
       </div>
     </div>

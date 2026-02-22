@@ -21,24 +21,24 @@ class GeminiService {
    */
   extractJSON(response) {
     let jsonText = response.trim();
-    
+
     // Try to extract JSON from markdown code blocks
     // Match: ```json ... ```, ```javascript ... ```, or ``` ... ```
     const codeBlockMatch = jsonText.match(/```(?:json|javascript)?\s*([\s\S]*?)```/);
     if (codeBlockMatch) {
       jsonText = codeBlockMatch[1].trim();
     }
-    
+
     // Find the actual JSON object boundaries
     const jsonStart = jsonText.indexOf('{');
     const jsonEnd = jsonText.lastIndexOf('}');
-    
+
     if (jsonStart === -1 || jsonEnd === -1) {
       throw new Error('No valid JSON object found in response');
     }
-    
+
     jsonText = jsonText.substring(jsonStart, jsonEnd + 1);
-    
+
     // Handle common JSON issues when code snippets are embedded
     // Replace unescaped newlines in strings (common when code is embedded)
     try {
@@ -48,11 +48,11 @@ class GeminiService {
     } catch (error) {
       // If parsing fails, try to fix common issues
       console.log('⚠️  Initial parse failed, attempting to fix JSON...');
-      
+
       // Strategy: re-parse with more aggressive cleaning
       // Replace literal newlines within string values with escaped newlines
       // This is a simplified approach - for production, consider using a proper JSON repair library
-      
+
       try {
         // Attempt to use regex to fix unescaped newlines in strings
         // This regex finds string values and escapes newlines within them
@@ -67,7 +67,7 @@ class GeminiService {
             return `"${fixed}"`;
           }
         );
-        
+
         JSON.parse(fixedJson);
         console.log('✅ JSON successfully repaired');
         return fixedJson;
@@ -124,19 +124,19 @@ Return ONLY valid JSON in this exact format:
     try {
       const result = await this.model.generateContent(prompt);
       response = result.response.text();
-      
+
       console.log('\n📋 Gemini Roadmap Response:');
       console.log('─'.repeat(80));
       console.log(response.substring(0, 500) + (response.length > 500 ? '...' : ''));
       console.log('─'.repeat(80));
-      
+
       // Extract and clean JSON from response
       const jsonText = this.extractJSON(response);
-      
+
       const parsedData = JSON.parse(jsonText);
-      
+
       console.log('\n✅ Successfully parsed roadmap with', parsedData.roadmap?.modules?.length || 0, 'modules\n');
-      
+
       return parsedData;
     } catch (error) {
       console.error('\n❌ Error generating roadmap:', error.message);
@@ -191,39 +191,39 @@ IMPORTANT Requirements:
     try {
       const result = await this.model.generateContent(prompt);
       response = result.response.text();
-      
+
       console.log('\n❓ Gemini Question Response:');
       console.log('─'.repeat(80));
       console.log(response.substring(0, 300) + (response.length > 300 ? '...' : ''));
       console.log('─'.repeat(80));
-      
+
       // Extract and clean JSON from response
       const jsonText = this.extractJSON(response);
-      
+
       const questionData = JSON.parse(jsonText);
-      
+
       // Validate required fields
-      if (!questionData.question || !Array.isArray(questionData.options) || 
-          questionData.correctIndex === undefined || !questionData.explanation) {
+      if (!questionData.question || !Array.isArray(questionData.options) ||
+        questionData.correctIndex === undefined || !questionData.explanation) {
         throw new Error('Invalid question format: missing required fields');
       }
-      
+
       // Add unique ID
       questionData.id = `q-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
+
       console.log('\n✅ Generated', questionData.difficulty, 'question on topic:', questionData.topic || 'N/A', '\n');
-      
+
       return questionData;
     } catch (error) {
       console.error(`\n❌ Error generating question (attempt ${retryCount + 1}/${maxRetries + 1}):`, error.message);
-      
+
       // Retry with a simpler prompt if we haven't exceeded max retries
       if (retryCount < maxRetries) {
         console.log(`🔄 Retrying question generation...\n`);
         await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
         return this.generateQuestion(moduleTitle, topics, difficulty, retryCount + 1);
       }
-      
+
       console.error('Response that failed to parse:', response?.substring(0, 500));
       throw new Error('Failed to generate question from AI after multiple attempts');
     }
@@ -271,19 +271,19 @@ Provide honest, constructive feedback. Return ONLY valid JSON.`;
     try {
       const result = await this.model.generateContent(prompt);
       response = result.response.text();
-      
+
       console.log('\n📊 Gemini Report Response:');
       console.log('─'.repeat(80));
       console.log(response.substring(0, 400) + (response.length > 400 ? '...' : ''));
       console.log('─'.repeat(80));
-      
+
       // Extract and clean JSON from response
       const jsonText = this.extractJSON(response);
-      
+
       const reportData = JSON.parse(jsonText);
-      
+
       console.log('\n✅ Generated report with score:', reportData.overallScore || 'N/A', '\n');
-      
+
       return reportData;
     } catch (error) {
       console.error('\n❌ Error generating report:', error.message);
@@ -291,6 +291,75 @@ Provide honest, constructive feedback. Return ONLY valid JSON.`;
         console.error('Response that failed to parse:', response.substring(0, 500));
       }
       throw new Error('Failed to generate completion report');
+    }
+  }
+
+  /**
+   * Generate study material for a module
+   * @param {string} moduleTitle - Title of the module
+   * @param {Array} topics - Key topics/concepts to cover
+   * @param {string} subject - The subject (e.g., "Mahabharata", "JavaScript")
+   * @returns {object} Structured study material
+   */
+  async generateStudyMaterial(moduleTitle, topics, subject) {
+    const topicsList = Array.isArray(topics) ? topics.join(', ') : topics;
+
+    const prompt = `You are an expert educator creating comprehensive study material for the module "${moduleTitle}" in the subject "${subject}".
+
+Topics to cover: ${topicsList}
+
+Generate detailed, well-structured study material that a student can read and learn from BEFORE taking a quiz. The content should be educational, clear, and thorough.
+
+Return ONLY valid JSON in this exact format:
+{
+  "overview": "A 2-3 sentence introduction to what this module covers and why it matters.",
+  "sections": [
+    {
+      "title": "Section heading",
+      "content": "Detailed educational content in plain text. This should be 3-5 paragraphs of actual teaching material, explaining concepts clearly with examples. Use simple language. Each section should thoroughly cover one sub-topic.",
+      "keyTakeaways": ["Key point 1", "Key point 2", "Key point 3"]
+    }
+  ],
+  "summary": "A concise 2-3 sentence recap of the most important concepts from this module.",
+  "furtherReading": [
+    {
+      "title": "Resource name",
+      "description": "Brief description of what this resource covers"
+    }
+  ]
+}
+
+IMPORTANT RULES:
+- Generate 3-5 sections covering the main topics
+- Each section's "content" should be substantial (at least 3 paragraphs of real educational content)
+- Make content specific to "${subject}" - do NOT generate generic placeholder text
+- Include real facts, concepts, and explanations
+- Key takeaways should be specific and useful
+- Further reading should suggest 2-3 relevant resources
+- Return ONLY valid JSON, no markdown wrapping`;
+
+    let response;
+    try {
+      const result = await this.model.generateContent(prompt);
+      response = result.response.text();
+
+      console.log('\n📚 Gemini Study Material Response:');
+      console.log('─'.repeat(80));
+      console.log(response.substring(0, 400) + (response.length > 400 ? '...' : ''));
+      console.log('─'.repeat(80));
+
+      const jsonText = this.extractJSON(response);
+      const studyData = JSON.parse(jsonText);
+
+      console.log('\n✅ Generated study material:', studyData.sections?.length || 0, 'sections\n');
+
+      return studyData;
+    } catch (error) {
+      console.error('\n❌ Error generating study material:', error.message);
+      if (response) {
+        console.error('Response that failed to parse:', response.substring(0, 500));
+      }
+      throw new Error('Failed to generate study material');
     }
   }
 }

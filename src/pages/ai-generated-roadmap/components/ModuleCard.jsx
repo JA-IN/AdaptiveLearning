@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Icon from "../../../components/AppIcon";
 import Button from "../../../components/ui/Button";
+import { generateStudyMaterial } from "../../../services/api";
 
 const ModuleCard = ({
   module = null,
@@ -10,6 +11,9 @@ const ModuleCard = ({
   onModuleStart = null,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [studyMaterial, setStudyMaterial] = useState(null);
+  const [isLoadingMaterial, setIsLoadingMaterial] = useState(false);
+  const [materialError, setMaterialError] = useState(null);
   const navigate = useNavigate();
 
   const defaultModule = {
@@ -40,6 +44,18 @@ const ModuleCard = ({
   };
 
   const moduleData = module || defaultModule;
+
+  // Get subject from localStorage for study material generation
+  const getSubject = () => {
+    try {
+      const saved = localStorage.getItem("Nayi Disha_selected_technology");
+      if (saved) {
+        const tech = JSON.parse(saved);
+        return tech?.name || tech || "JavaScript";
+      }
+    } catch (e) { }
+    return "JavaScript";
+  };
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -98,6 +114,25 @@ const ModuleCard = ({
     setIsExpanded(!isExpanded);
   };
 
+  const handleLoadStudyMaterial = async () => {
+    if (studyMaterial) return; // Already loaded
+
+    setIsLoadingMaterial(true);
+    setMaterialError(null);
+
+    try {
+      const subject = getSubject();
+      const topics = moduleData?.keyConcepts || moduleData?.learningObjectives || [];
+      const data = await generateStudyMaterial(moduleData?.title, topics, subject);
+      setStudyMaterial(data);
+    } catch (error) {
+      console.error("Failed to load study material:", error);
+      setMaterialError("Failed to load study material. Please try again.");
+    } finally {
+      setIsLoadingMaterial(false);
+    }
+  };
+
   const getActionButtonText = () => {
     switch (moduleData?.status) {
       case "completed":
@@ -149,14 +184,13 @@ const ModuleCard = ({
           <div
             className={`
               w-12 h-12 rounded-full flex items-center bg-[#0a0a0a] justify-center border-4 border-background
-              ${
-                moduleData?.status === "completed"
-                  ? "bg-success neon-glow"
-                  : moduleData?.status === "in-progress"
+              ${moduleData?.status === "completed"
+                ? "bg-success neon-glow"
+                : moduleData?.status === "in-progress"
                   ? "bg-primary neon-glow animate-pulse"
                   : moduleData?.status === "available"
-                  ? "bg-secondary"
-                  : "bg-muted"
+                    ? "bg-secondary"
+                    : "bg-muted"
               }
             `}
           >
@@ -173,10 +207,9 @@ const ModuleCard = ({
       <div
         className={`
           glass-card border border-purple-500/20 rounded-lg transition-all duration-300 hover:border-purple-500/40
-          ${
-            moduleData?.status === "locked"
-              ? "opacity-60"
-              : "hover:shadow-glass-lg"
+          ${moduleData?.status === "locked"
+            ? "opacity-60"
+            : "hover:shadow-glass-lg"
           }
           ${viewMode === "timeline" ? "flex-1" : "w-full"}
         `}
@@ -189,14 +222,13 @@ const ModuleCard = ({
                 <div
                   className={`
                     w-10 h-10 rounded-lg flex items-center justify-center
-                    ${
-                      moduleData?.status === "completed"
-                        ? "bg-success/20 text-success"
-                        : moduleData?.status === "in-progress"
+                    ${moduleData?.status === "completed"
+                      ? "bg-success/20 text-success"
+                      : moduleData?.status === "in-progress"
                         ? "bg-primary/20 text-primary"
                         : moduleData?.status === "available"
-                        ? "bg-secondary/20 text-secondary"
-                        : "bg-muted/20 text-muted-foreground"
+                          ? "bg-secondary/20 text-secondary"
+                          : "bg-muted/20 text-muted-foreground"
                     }
                   `}
                 >
@@ -377,6 +409,151 @@ const ModuleCard = ({
                     </div>
                   </div>
                 )}
+
+              {/* Study Material Section */}
+              <div className="border-t border-purple-500/10 pt-4 mt-4">
+                {!studyMaterial && !isLoadingMaterial && !materialError && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleLoadStudyMaterial}
+                    disabled={moduleData?.status === "locked"}
+                    iconName="BookOpen"
+                    iconPosition="left"
+                    iconSize={16}
+                    className="w-full mb-4 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/50"
+                  >
+                    📖 Load Study Material
+                  </Button>
+                )}
+
+                {/* Loading State */}
+                {isLoadingMaterial && (
+                  <div className="text-center py-8 mb-4">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Icon name="Loader2" size={24} className="text-primary animate-spin" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground mb-1">
+                      Generating Study Material...
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      AI is preparing reading content for this module. This may take 10-15 seconds.
+                    </p>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {materialError && (
+                  <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Icon name="AlertCircle" size={16} className="text-destructive" />
+                      <span className="text-sm text-destructive font-medium">Error</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">{materialError}</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setMaterialError(null);
+                        handleLoadStudyMaterial();
+                      }}
+                      iconName="RefreshCw"
+                      iconPosition="left"
+                      iconSize={14}
+                    >
+                      Try Again
+                    </Button>
+                  </div>
+                )}
+
+                {/* Study Material Content */}
+                {studyMaterial && (
+                  <div className="space-y-5 mb-6">
+                    {/* Overview */}
+                    {studyMaterial.overview && (
+                      <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Icon name="BookOpen" size={16} className="text-emerald-400" />
+                          <h4 className="text-sm font-semibold text-emerald-400">Overview</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {studyMaterial.overview}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Content Sections */}
+                    {studyMaterial.sections?.map((section, secIndex) => (
+                      <div
+                        key={secIndex}
+                        className="p-4 glass-surface border border-purple-500/10 rounded-lg"
+                      >
+                        <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center space-x-2">
+                          <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-bold">
+                            {secIndex + 1}
+                          </span>
+                          <span>{section.title}</span>
+                        </h4>
+                        <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line mb-3">
+                          {section.content}
+                        </div>
+                        {section.keyTakeaways && section.keyTakeaways.length > 0 && (
+                          <div className="mt-3 p-3 bg-amber-500/5 border border-amber-500/15 rounded-md">
+                            <h5 className="text-xs font-semibold text-amber-400 mb-2 flex items-center space-x-1">
+                              <Icon name="Star" size={12} className="text-amber-400" />
+                              <span>Key Takeaways</span>
+                            </h5>
+                            <ul className="space-y-1">
+                              {section.keyTakeaways.map((takeaway, tIndex) => (
+                                <li key={tIndex} className="flex items-start space-x-2 text-xs">
+                                  <Icon name="CheckCircle" size={12} className="text-amber-400 mt-0.5 flex-shrink-0" />
+                                  <span className="text-muted-foreground">{takeaway}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Summary */}
+                    {studyMaterial.summary && (
+                      <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Icon name="FileText" size={16} className="text-blue-400" />
+                          <h4 className="text-sm font-semibold text-blue-400">Summary</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {studyMaterial.summary}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Further Reading */}
+                    {studyMaterial.furtherReading && studyMaterial.furtherReading.length > 0 && (
+                      <div className="p-4 bg-purple-500/5 border border-purple-500/20 rounded-lg">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Icon name="ExternalLink" size={16} className="text-purple-400" />
+                          <h4 className="text-sm font-semibold text-purple-400">Further Reading</h4>
+                        </div>
+                        <div className="space-y-2">
+                          {studyMaterial.furtherReading.map((resource, rIndex) => (
+                            <div key={rIndex} className="flex items-start space-x-2 text-xs">
+                              <Icon name="BookMarked" size={12} className="text-purple-400 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <span className="font-medium text-foreground">{resource.title}</span>
+                                {resource.description && (
+                                  <span className="text-muted-foreground"> — {resource.description}</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -394,7 +571,7 @@ const ModuleCard = ({
               ${moduleData?.status === "locked" ? "cursor-not-allowed" : ""}
             `}
           >
-            {getActionButtonText()}
+            {studyMaterial ? "📝 Start Quiz" : getActionButtonText()}
           </Button>
         </div>
       </div>

@@ -1,30 +1,35 @@
 import React from "react";
 import { motion } from "framer-motion";
 import Icon from "../../../components/AppIcon";
+import CountUp from "../../../components/ui/CountUp";
 
 const SocialProofSection = () => {
   const stats = [
     {
       id: 1,
-      value: "10K+",
+      end: 10,
+      suffix: "K+",
       label: "Active Learners",
       icon: "Users",
     },
     {
       id: 2,
-      value: "50+",
+      end: 50,
+      suffix: "+",
       label: "Expert Courses",
       icon: "BookOpen",
     },
     {
       id: 3,
-      value: "95%",
+      end: 95,
+      suffix: "%",
       label: "Success Rate",
       icon: "TrendingUp",
     },
     {
       id: 4,
-      value: "24/7",
+      end: 24,
+      suffix: "/7",
       label: "AI Support",
       icon: "MessageCircle",
     },
@@ -64,7 +69,7 @@ const SocialProofSection = () => {
                 </div>
               </div>
               <div className="text-3xl font-bold text-foreground mb-2">
-                {stat.value}
+                <CountUp end={stat.end} suffix={stat.suffix} duration={1800 + index * 300} />
               </div>
               <div className="text-sm text-muted-foreground">
                 {stat.label}
@@ -78,3 +83,4 @@ const SocialProofSection = () => {
 };
 
 export default SocialProofSection;
+

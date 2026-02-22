@@ -81,18 +81,25 @@ const RoadmapGenerationModal = ({
           return;
         }
 
-        // Check if roadmap already exists
+        // Check if roadmap already exists for the SAME subject
         setCurrentStep(0);
         setProgress(10);
-        
+
         const existingProgress = await userService.getProgress(user.uid);
-        
-        if (existingProgress && existingProgress.roadmap) {
-          // Roadmap already exists, use it instead of generating new one
+
+        // Only reuse existing roadmap if subject matches current selection
+        const currentSubject = userSelections?.subject || "JavaScript";
+        const existingSubject = existingProgress?.selected_subjects?.[0] ||
+          existingProgress?.roadmap?.userSelections?.subject || "";
+
+        const isSameSubject = existingSubject.toLowerCase() === currentSubject.toLowerCase();
+
+        if (existingProgress && existingProgress.roadmap && isSameSubject) {
+          // Roadmap already exists for the same subject, reuse it
           setExistingRoadmap(existingProgress.roadmap);
           setProgress(100);
           setCurrentStep(generationSteps.length - 1);
-          
+
           setTimeout(() => {
             setIsGenerating(false);
             onComplete(existingProgress.roadmap);
@@ -135,7 +142,7 @@ const RoadmapGenerationModal = ({
           skillLevel: userSelections?.skillLevel,
           selectedSubjects: [userSelections?.subject]
         });
-        
+
         setProgress(75);
 
         // Continue with remaining visual steps
@@ -232,8 +239,7 @@ const RoadmapGenerationModal = ({
                     key={step?.id}
                     className={`
                       flex items-center space-x-3 p-3 rounded-lg transition-all duration-300
-                      ${
-                        isActive ? "bg-primary/10 border border-primary/20" : ""
+                      ${isActive ? "bg-primary/10 border border-primary/20" : ""
                       }
                       ${isCompleted ? "opacity-60" : ""}
                       ${isUpcoming ? "opacity-40" : ""}
@@ -242,10 +248,9 @@ const RoadmapGenerationModal = ({
                     <div
                       className={`
                         w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300
-                        ${
-                          isCompleted
-                            ? "bg-success text-success-foreground"
-                            : isActive
+                        ${isCompleted
+                          ? "bg-success text-success-foreground"
+                          : isActive
                             ? "bg-primary text-primary-foreground animate-pulse"
                             : "bg-muted text-muted-foreground"
                         }
@@ -259,9 +264,8 @@ const RoadmapGenerationModal = ({
                     </div>
                     <div className="flex-1 text-left">
                       <div
-                        className={`text-sm font-medium ${
-                          isActive ? "text-primary" : "text-foreground"
-                        }`}
+                        className={`text-sm font-medium ${isActive ? "text-primary" : "text-foreground"
+                          }`}
                       >
                         {step?.title}
                       </div>

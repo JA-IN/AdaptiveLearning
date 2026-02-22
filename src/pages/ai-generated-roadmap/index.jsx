@@ -39,21 +39,21 @@ const AIGeneratedRoadmap = () => {
       try {
         const tech = JSON.parse(savedTechnology);
         subject = tech?.name || tech;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (savedGoal) {
       try {
         const goalData = JSON.parse(savedGoal);
         goal = goalData?.title || goalData;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (savedSelections) {
       try {
         const sel = JSON.parse(savedSelections);
         skillLevel = sel?.skillLevel || skillLevel;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     return { subject, goal, skillLevel };
@@ -83,10 +83,10 @@ const AIGeneratedRoadmap = () => {
         selections.skillLevel.slice(1),
     },
     aiRecommendations: [
-      "Focus on practical projects to reinforce theoretical concepts",
-      "Practice coding daily for 1-2 hours to maintain momentum",
-      "Join developer communities for peer learning and support",
-      "Build a portfolio project after completing each major section",
+      "Focus on practical exercises to reinforce theoretical concepts",
+      `Practice ${["History", "Economics", "Geography", "Politics", "Mahabharata", "Ramayana"].includes(selections.subject) ? "reading and note-taking" : "coding"} daily for 1-2 hours to maintain momentum`,
+      "Join study communities for peer learning and support",
+      `Build a ${["History", "Economics", "Geography", "Politics", "Mahabharata", "Ramayana"].includes(selections.subject) ? "study portfolio" : "portfolio project"} after completing each major section`,
     ],
     overallProgress: 0,
   };
@@ -104,10 +104,10 @@ const AIGeneratedRoadmap = () => {
 
         // Load from database first
         const progress = await userService.getProgress(user.uid);
-        
+
         if (progress && progress.roadmap) {
           setUserProgress(progress);
-          
+
           // Enhance roadmap with progress data
           const enhancedRoadmap = {
             ...progress.roadmap,
@@ -121,11 +121,11 @@ const AIGeneratedRoadmap = () => {
             // Mark modules as completed based on progress
             modules: progress.roadmap.modules?.map(module => ({
               ...module,
-              status: progress.completed_modules?.includes(module.id) 
-                ? "completed" 
+              status: progress.completed_modules?.includes(module.id)
+                ? "completed"
                 : progress.current_module === module.id
-                ? "in-progress"
-                : "available",
+                  ? "in-progress"
+                  : "available",
               score: progress.quiz_scores?.[module.id] || 0
             })) || []
           };
@@ -134,7 +134,7 @@ const AIGeneratedRoadmap = () => {
         } else {
           // No roadmap in database, check if freshly generated
           const stateRoadmap = location?.state?.roadmapData;
-          
+
           if (stateRoadmap) {
             const enhancedData = {
               ...stateRoadmap,

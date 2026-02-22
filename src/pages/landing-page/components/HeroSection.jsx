@@ -22,15 +22,17 @@ const HeroSection = ({ onStartLearning }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
+           
             <LayoutTextFlip
-              text="Empower your future by mastering"
+               text="Empower your future by mastering"
               words={[
                 "Web Development",
                 "React & Node.js",
                 "Full-Stack Skills",
                 "Python & Django",
+                "Indian Knowledge",
               ]}
-              duration={3000}
+              duration={2000}
             />
           </motion.div>
           {/* Value Proposition */}

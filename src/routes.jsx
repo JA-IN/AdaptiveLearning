@@ -14,6 +14,8 @@ import LandingPage from "./pages/landing-page";
 import AIGeneratedRoadmap from "./pages/ai-generated-roadmap";
 import ModuleQuizInterface from "./pages/module-quiz-interface";
 import SubjectSelection from "./pages/subject-selection";
+import Solution from "./pages/solution";
+import FeaturesPage from "./pages/features";
 import ProfileModal from "pages/Profile";
 import AuthPage from "./pages/auth";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -64,6 +66,8 @@ function ModalSwitch() {
             <SubjectSelection />
           </ProtectedRoute>
         } />
+        <Route path="/solution" element={<Solution />} />
+        <Route path="/features" element={<FeaturesPage />} />
 
         {/* Direct access to /profile should show full page */}
         <Route
