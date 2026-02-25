@@ -85,7 +85,17 @@ const RoadmapGenerationModal = ({
         setCurrentStep(0);
         setProgress(10);
 
-        const existingProgress = await userService.getProgress(user.uid);
+        // Non-blocking Supabase check - don't let it block roadmap generation
+        let existingProgress = null;
+        try {
+          existingProgress = await Promise.race([
+            userService.getProgress(user.uid),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Supabase timeout")), 8000))
+          ]);
+        } catch (supabaseErr) {
+          console.warn("Supabase progress check failed (non-blocking):", supabaseErr.message);
+          // Continue with fresh roadmap generation
+        }
 
         // Only reuse existing roadmap if subject matches current selection
         const currentSubject = userSelections?.subject || "JavaScript";
@@ -126,22 +136,36 @@ const RoadmapGenerationModal = ({
         setCurrentStep(1);
         setProgress(45);
 
-        const roadmapData = await generateRoadmap(
-          userSelections?.subject || "JavaScript",
-          userSelections?.goal || "Full Stack Development",
-          userSelections?.skillLevel || "intermediate"
-        );
+        // Add timeout to prevent hanging when Gemini API is slow
+        const roadmapData = await Promise.race([
+          generateRoadmap(
+            userSelections?.subject || "JavaScript",
+            userSelections?.goal || "Full Stack Development",
+            userSelections?.skillLevel || "intermediate"
+          ),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Roadmap generation timed out. Please try again.")), 45000)
+          )
+        ]);
 
         setGeneratedRoadmap(roadmapData);
         setProgress(70);
 
-        // Save roadmap to database with initialized progress
-        await userService.saveRoadmap(user.uid, roadmapData, {
-          subject: userSelections?.subject,
-          goal: userSelections?.goal,
-          skillLevel: userSelections?.skillLevel,
-          selectedSubjects: [userSelections?.subject]
-        });
+        // Save roadmap to database (non-blocking)
+        try {
+          await Promise.race([
+            userService.saveRoadmap(user.uid, roadmapData, {
+              subject: userSelections?.subject,
+              goal: userSelections?.goal,
+              skillLevel: userSelections?.skillLevel,
+              selectedSubjects: [userSelections?.subject]
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Save timeout")), 10000))
+          ]);
+        } catch (saveErr) {
+          console.warn("Failed to save roadmap to database (non-blocking):", saveErr.message);
+          // Continue anyway - roadmap is still generated
+        }
 
         setProgress(75);
 

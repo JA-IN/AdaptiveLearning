@@ -18,8 +18,8 @@ app.use(morgan('dev')); // Logging
 
 // CORS - Allow all origins in development
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL
     : true, // Allow all origins in development
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -36,6 +36,14 @@ app.get('/api/health', (req, res) => {
     success: true,
     message: 'Nayi Disha API is running',
     timestamp: new Date().toISOString()
+  });
+});
+
+// Base API endpoint (prevents 404 noise in terminal)
+app.get('/api', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Nayi Disha API - Use /api/health, /api/quiz, or /api/roadmap endpoints',
   });
 });
 
@@ -67,7 +75,7 @@ app.listen(PORT, () => {
   console.log(`📍 API URL: http://localhost:${PORT}/api`);
   console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  
+
   // Check if Gemini API key is set
   if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your-gemini-api-key-here') {
     console.warn('⚠️  WARNING: GEMINI_API_KEY not set! Update backend/.env file');

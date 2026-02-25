@@ -8,14 +8,14 @@ import Input from '../../components/ui/Input';
 const AuthPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { 
+  const {
     user,
     loading: authLoading,
-    loginWithGoogle, 
-    loginWithEmail, 
-    signupWithEmail, 
+    loginWithGoogle,
+    loginWithEmail,
+    signupWithEmail,
     forgotPassword,
-    error: authError 
+    error: authError
   } = useAuth();
 
   const [mode, setMode] = useState('login'); // 'login', 'signup', 'forgot'
@@ -29,7 +29,7 @@ const AuthPage = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  const from = location.state?.from?.pathname || '/goal-selection';
+  const from = location.state?.from?.pathname || '/landing-page';
   const [hasRedirected, setHasRedirected] = React.useState(false);
 
   // Redirect authenticated users

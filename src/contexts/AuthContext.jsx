@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { 
-  auth, 
-  signInWithGoogle, 
-  signInWithLinkedIn, 
+import {
+  auth,
+  signInWithGoogle,
+  signInWithLinkedIn,
   signInWithEmail,
   signUpWithEmail,
   resetPassword,
   getAuthRedirectResult,
-  signOut 
+  signOut
 } from '../config/firebase';
 import { userService } from '../services/userService';
 
@@ -62,21 +62,26 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser && isSubscribed) {
-          // Sync user to Supabase
-          await userService.syncUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
-            provider: firebaseUser.providerData[0]?.providerId
-          });
-          
+          // Set user immediately so auth isn't blocked by Supabase sync
           setUser(firebaseUser);
+
+          // Sync user to Supabase (non-blocking)
+          try {
+            await userService.syncUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              provider: firebaseUser.providerData[0]?.providerId
+            });
+          } catch (syncErr) {
+            console.warn('Supabase sync failed (non-blocking):', syncErr.message);
+          }
         } else if (isSubscribed) {
           setUser(null);
         }
       } catch (err) {
-        console.error('Error syncing user:', err);
+        console.error('Error in auth state change:', err);
         if (isSubscribed) {
           setError(err.message);
         }

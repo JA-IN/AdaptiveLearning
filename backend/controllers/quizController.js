@@ -34,7 +34,7 @@ export async function generateQuestion(req, res) {
 
     // Generate question using Gemini AI
     const question = await geminiService.generateQuestion(moduleTitle, topics, difficulty);
-    
+
     console.log(`   Question ID: ${question.id}`);
     console.log(`   Options: ${question.options?.length || 0}\n`);
 
@@ -52,13 +52,10 @@ export async function generateQuestion(req, res) {
     });
     sessionStore.storeModuleProgress(sessionId, moduleId, moduleProgress);
 
-    // Don't send correctIndex to frontend
-    const { correctIndex, ...questionForFrontend } = question;
-
     res.json({
       success: true,
       data: {
-        question: questionForFrontend,
+        question,
         currentDifficulty: difficulty,
         questionNumber: (recentAnswers.length || 0) + 1
       }
@@ -93,7 +90,7 @@ export async function evaluateAnswer(req, res) {
 
     // Get module progress
     const moduleProgress = sessionStore.getModuleProgress(sessionId, moduleId);
-    
+
     if (!moduleProgress || !moduleProgress.questionHistory) {
       return res.status(400).json({
         success: false,
@@ -103,7 +100,7 @@ export async function evaluateAnswer(req, res) {
 
     // Find the question in history
     const questionData = moduleProgress.questionHistory.find(q => q.questionId === questionId);
-    
+
     if (!questionData) {
       return res.status(404).json({
         success: false,
@@ -174,7 +171,7 @@ export async function getModuleReport(req, res) {
 
     // Get module progress
     const moduleProgress = sessionStore.getModuleProgress(sessionId, moduleId);
-    
+
     if (!moduleProgress || !moduleProgress.answers) {
       return res.status(400).json({
         success: false,

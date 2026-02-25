@@ -19,14 +19,28 @@ const ModuleQuizInterface = () => {
   const location = useLocation();
   const { user } = useAuth();
 
-  // Get module data from navigation state or use default
-  const moduleData = location?.state?.module || {
-    id: 2,
-    title: "DOM Manipulation",
-    description: "Learn to interact with HTML elements using JavaScript",
-    difficultyLevel: "intermediate",
-    totalQuestions: 15,
+  // Get module data from navigation state, localStorage, or use default
+  const getModuleData = () => {
+    // First: navigation state (from roadmap page)
+    if (location?.state?.module) return location.state.module;
+
+    // Second: localStorage (saved by roadmap page handleModuleStart)
+    try {
+      const saved = localStorage.getItem("Nayi Disha_current_module");
+      if (saved) return JSON.parse(saved);
+    } catch (e) { }
+
+    // Last resort: hardcoded default
+    return {
+      id: 2,
+      title: "DOM Manipulation",
+      description: "Learn to interact with HTML elements using JavaScript",
+      difficultyLevel: "intermediate",
+      totalQuestions: 15,
+      topics: ["Element Selection", "Event Handling", "Dynamic Content"],
+    };
   };
+  const moduleData = getModuleData();
 
   // Quiz state management
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -159,11 +173,34 @@ const ModuleQuizInterface = () => {
     setError(null);
 
     try {
-      const response = await generateQuestion(
-        moduleData.id,
-        moduleData.title,
-        moduleData.topics || ["General"]
+      // Extract topics from various module data shapes:
+      // AI roadmap modules have 'topics', fallback modules have 'keyConcepts'
+      const topics = (moduleData.topics && moduleData.topics.length > 0)
+        ? moduleData.topics
+        : (moduleData.keyConcepts && moduleData.keyConcepts.length > 0)
+          ? moduleData.keyConcepts
+          : (moduleData.learningObjectives && moduleData.learningObjectives.length > 0)
+            ? moduleData.learningObjectives
+            : [moduleData.title];
+
+      // Ensure moduleId is a string for consistency
+      const moduleId = String(moduleData.id);
+
+      console.log("Requesting question for:", {
+        moduleId,
+        title: moduleData.title,
+        topics,
+      });
+
+      // Add a timeout to prevent hanging when Gemini API is slow
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timed out after 30 seconds")), 30000)
       );
+
+      const response = await Promise.race([
+        generateQuestion(moduleId, moduleData.title, topics),
+        timeoutPromise
+      ]);
 
       console.log("Full API response:", response);
 
@@ -178,7 +215,7 @@ const ModuleQuizInterface = () => {
 
       // Handle nested question object structure
       const questionInfo = questionData.question || questionData;
-      
+
       if (!questionInfo.options || !Array.isArray(questionInfo.options)) {
         console.error("Invalid options:", questionInfo.options);
         throw new Error(
@@ -209,7 +246,9 @@ const ModuleQuizInterface = () => {
       setQuestionStartTime(Date.now());
     } catch (err) {
       console.error("Error loading question:", err);
-      setError("Failed to load question. Using fallback.");
+      setError(err.message === "Request timed out after 30 seconds"
+        ? "Question generation timed out. Please try again."
+        : "Failed to load question. Using fallback.");
       // Use mock question as fallback
       if (mockQuestions[questions.length]) {
         const fallbackQ = mockQuestions[questions.length];

@@ -102,7 +102,30 @@ const AIGeneratedRoadmap = () => {
           return;
         }
 
-        // Load from database first
+        // PRIORITY: If navigating with a freshly generated roadmap, use it immediately
+        const stateRoadmap = location?.state?.roadmapData;
+        const isNewRoadmap = location?.state?.isNewRoadmap;
+
+        if (stateRoadmap && isNewRoadmap) {
+          const enhancedData = {
+            ...stateRoadmap,
+            completedModules: 0,
+            overallProgress: 0,
+            createdAt: new Date().toISOString(),
+            lastUpdated: new Date().toISOString(),
+            userSelections: {
+              subject: location?.state?.subject || stateRoadmap?.title || "JavaScript",
+              goal: location?.state?.goal || "Full Stack Development",
+              skillLevel: location?.state?.skillLevel || "intermediate",
+            },
+          };
+          console.log("Using freshly generated roadmap:", enhancedData.title || enhancedData.userSelections?.subject);
+          setRoadmapData(enhancedData);
+          setIsLoading(false);
+          return;
+        }
+
+        // Otherwise, load from database
         const progress = await userService.getProgress(user.uid);
 
         if (progress && progress.roadmap) {
@@ -131,32 +154,38 @@ const AIGeneratedRoadmap = () => {
           };
 
           setRoadmapData(enhancedRoadmap);
+        } else if (stateRoadmap) {
+          // Freshly generated roadmap (without isNewRoadmap flag)
+          const enhancedData = {
+            ...stateRoadmap,
+            completedModules: 0,
+            overallProgress: 0,
+            createdAt: new Date().toISOString(),
+            lastUpdated: new Date().toISOString(),
+            userSelections: {
+              subject: location?.state?.subject || "JavaScript",
+              goal: location?.state?.goal || "Full Stack Development",
+              skillLevel: location?.state?.skillLevel || "intermediate",
+            },
+          };
+          setRoadmapData(enhancedData);
         } else {
-          // No roadmap in database, check if freshly generated
-          const stateRoadmap = location?.state?.roadmapData;
-
-          if (stateRoadmap) {
-            const enhancedData = {
-              ...stateRoadmap,
-              completedModules: 0,
-              overallProgress: 0,
-              createdAt: new Date().toISOString(),
-              lastUpdated: new Date().toISOString(),
-              userSelections: {
-                subject: location?.state?.subject || "JavaScript",
-                goal: location?.state?.goal || "Full Stack Development",
-                skillLevel: location?.state?.skillLevel || "intermediate",
-              },
-            };
-            setRoadmapData(enhancedData);
-          } else {
-            // No roadmap at all - user needs to generate one
-            setRoadmapData(null);
-          }
+          // No roadmap at all - user needs to generate one
+          setRoadmapData(null);
         }
       } catch (error) {
         console.error("Error loading roadmap:", error);
-        setRoadmapData(null);
+        // If Supabase fails but we have state roadmap, use it
+        const stateRoadmap = location?.state?.roadmapData;
+        if (stateRoadmap) {
+          setRoadmapData({
+            ...stateRoadmap,
+            completedModules: 0,
+            overallProgress: 0,
+          });
+        } else {
+          setRoadmapData(null);
+        }
       } finally {
         setIsLoading(false);
       }

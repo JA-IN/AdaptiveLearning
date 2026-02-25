@@ -2,11 +2,22 @@ import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Icon from "../AppIcon";
 import Button from "./Button";
+import { useAuth } from "../../contexts/AuthContext";
 
 const Header = ({ className = "" }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/auth');
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
 
   const navigationItems = [
     {
@@ -72,23 +83,35 @@ const Header = ({ className = "" }) => {
                 iconName={item.icon}
                 iconPosition="left"
                 iconSize={18}
-                className={`${
-                  isActive(item.path)
-                    ? "bg-primary text-primary-foreground"
-                    : ""
-                }`}
+                className={`${isActive(item.path)
+                  ? "bg-primary text-primary-foreground"
+                  : ""
+                  }`}
               >
                 {item.label}
               </Button>
             ))}
           </nav>
 
-          {/* Desktop Profile Icon */}
-          <div
-            className="hidden lg:flex w-8 h-8 rounded-full bg-primary items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => handleNavigation("/profile")}
-          >
-            <Icon name="User" size={16} className="text-white" />
+          {/* Desktop Profile & Logout */}
+          <div className="hidden lg:flex items-center space-x-2">
+            <div
+              className="w-8 h-8 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => handleNavigation("/profile")}
+            >
+              <Icon name="User" size={16} className="text-white" />
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              iconName="LogOut"
+              iconPosition="left"
+              iconSize={16}
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            >
+              Logout
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -114,11 +137,10 @@ const Header = ({ className = "" }) => {
                   iconName={item.icon}
                   iconPosition="left"
                   iconSize={18}
-                  className={`w-full justify-start px-4 py-3 ${
-                    isActive(item.path)
-                      ? "bg-primary text-primary-foreground"
-                      : ""
-                  }`}
+                  className={`w-full justify-start px-4 py-3 ${isActive(item.path)
+                    ? "bg-primary text-primary-foreground"
+                    : ""
+                    }`}
                 >
                   <div className="flex flex-col items-start">
                     <span>{item.label}</span>
@@ -129,8 +151,8 @@ const Header = ({ className = "" }) => {
                 </Button>
               ))}
 
-              {/* Mobile Profile Link */}
-              <div className="pt-2 mt-4 border-t">
+              {/* Mobile Profile & Logout */}
+              <div className="pt-2 mt-4 border-t space-y-2">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -141,6 +163,17 @@ const Header = ({ className = "" }) => {
                   className="w-full justify-start"
                 >
                   Profile
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  iconName="LogOut"
+                  iconPosition="left"
+                  iconSize={16}
+                  className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                >
+                  Log Out
                 </Button>
               </div>
             </nav>

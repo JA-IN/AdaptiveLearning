@@ -13,8 +13,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
 
   const handleStartLearning = () => {
-    // Redirect to auth page, which will then redirect to goal-selection after login
-    navigate("/auth");
+    navigate("/subject-selection");
   };
 
   return (
