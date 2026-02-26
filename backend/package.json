@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "build": "echo 'No build step required for pure Node.js backend'",
+    "prod": "NODE_ENV=production node server.js"
   },
   "keywords": [
     "ai",
