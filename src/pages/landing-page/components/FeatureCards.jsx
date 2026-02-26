@@ -84,7 +84,7 @@ const FeatureCards = () => {
           viewport={{ once: true }}
         >
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Why Choose <span className="text-primary">Nayi Disha</span>?
+            Why Choose <span className="text-primary">Vidya-AI</span>?
           </h2>
           <p className="text-muted-foreground max-w-3xl mx-auto">
             Experience personalized education with AI technology designed to

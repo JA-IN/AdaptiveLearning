@@ -18,6 +18,7 @@ import Solution from "./pages/solution";
 import FeaturesPage from "./pages/features";
 import ProfileModal from "pages/Profile";
 import AuthPage from "./pages/auth";
+import ProgressPage from "./pages/progress";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -68,6 +69,11 @@ function ModalSwitch() {
         } />
         <Route path="/solution" element={<Solution />} />
         <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/progress" element={
+          <ProtectedRoute>
+            <ProgressPage />
+          </ProtectedRoute>
+        } />
 
         {/* Direct access to /profile should show full page */}
         <Route

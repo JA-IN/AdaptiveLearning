@@ -3,8 +3,7 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   OAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -30,22 +29,18 @@ const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 const linkedinProvider = new OAuthProvider('oidc.linkedin');
 
-// Configure providers to use current origin for redirect
-const currentOrigin = window.location.origin;
+// Configure providers
 googleProvider.setCustomParameters({
-  prompt: 'select_account',
-  redirect_uri: currentOrigin
+  prompt: 'select_account'
 });
 
 linkedinProvider.setCustomParameters({
-  prompt: 'consent',
-  redirect_uri: currentOrigin
+  prompt: 'consent'
 });
 
-// Auth functions
-export const signInWithGoogle = () => signInWithRedirect(auth, googleProvider);
-export const signInWithLinkedIn = () => signInWithRedirect(auth, linkedinProvider);
-export const getAuthRedirectResult = () => getRedirectResult(auth);
+// Auth functions — using signInWithPopup for reliability in modern browsers
+export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
+export const signInWithLinkedIn = () => signInWithPopup(auth, linkedinProvider);
 
 // Email/Password auth
 export const signUpWithEmail = async (email, password, displayName) => {

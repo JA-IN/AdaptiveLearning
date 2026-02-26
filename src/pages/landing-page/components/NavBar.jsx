@@ -41,7 +41,7 @@ const menuItems = [
   { name: "Features", href: "/features" },
   { name: "Solution", href: "/solution" },
   { name: "Pricing", href: "#pricing" },
-  { name: "About", href: "#about" },
+  { name: "Progress", href: "/progress" },
 ];
 
 export default function Navbar() {

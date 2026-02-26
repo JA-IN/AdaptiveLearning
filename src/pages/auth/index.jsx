@@ -117,11 +117,12 @@ const AuthPage = () => {
     setLoading(true);
     setError('');
     try {
-      // This will redirect to Google
       await loginWithGoogle();
-      // User will be redirected back and handled by AuthContext
+      // Popup returned successfully, navigate to destination
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.message || 'Failed to login with Google');
+    } finally {
       setLoading(false);
     }
   };

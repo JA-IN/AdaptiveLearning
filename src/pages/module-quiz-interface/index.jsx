@@ -269,19 +269,31 @@ const ModuleQuizInterface = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Load saved progress from localStorage
+  // Load saved progress from localStorage (only if quiz wasn't already finished)
   useEffect(() => {
     const savedProgress = localStorage.getItem(
       `quiz_progress_${moduleData?.id}`
     );
     if (savedProgress) {
       const progress = JSON.parse(savedProgress);
-      setCurrentQuestionIndex(progress?.currentQuestionIndex || 0);
-      setCompletedQuestions(progress?.completedQuestions || []);
-      setTimeElapsed(progress?.timeElapsed || 0);
-      setStreakCount(progress?.streakCount || 0);
-      setRollingWindow(progress?.rollingWindow || []);
-      setCurrentDifficulty(progress?.currentDifficulty || "medium");
+      // Only restore if the quiz wasn't already completed (< 10 questions)
+      if ((progress?.completedQuestions?.length || 0) < 10) {
+        setCurrentQuestionIndex(progress?.currentQuestionIndex || 0);
+        setCompletedQuestions(progress?.completedQuestions || []);
+        setTimeElapsed(progress?.timeElapsed || 0);
+        setStreakCount(progress?.streakCount || 0);
+        setRollingWindow(progress?.rollingWindow || []);
+        setCurrentDifficulty(progress?.currentDifficulty || "medium");
+      } else {
+        // Old completed quiz — clear it and start fresh
+        localStorage.removeItem(`quiz_progress_${moduleData?.id}`);
+        setCompletedQuestions([]);
+        setCurrentQuestionIndex(0);
+        setTimeElapsed(0);
+        setStreakCount(0);
+        setRollingWindow([]);
+        setCurrentDifficulty("medium");
+      }
     }
   }, [moduleData?.id]);
 
@@ -426,6 +438,11 @@ const ModuleQuizInterface = () => {
 
   // Handle next question
   const handleNextQuestion = () => {
+    // Guard: if we've already reached 10 questions, finish instead
+    if (completedQuestions?.length >= 10) {
+      handleFinishQuiz();
+      return;
+    }
     setSelectedAnswer(null);
     setIsSubmitted(false);
     setShowHint(false);
@@ -440,6 +457,17 @@ const ModuleQuizInterface = () => {
   const handleFinishQuiz = async () => {
     const finalAccuracy = calculateAccuracy();
     const totalTime = timeElapsed;
+    const correctCount = completedQuestions?.filter((q) => q?.isCorrect)?.length || 0;
+
+    // Read current subject from localStorage
+    let currentSubject = 'Unknown';
+    try {
+      const savedTech = localStorage.getItem('Nayi Disha_selected_technology');
+      if (savedTech) {
+        const tech = JSON.parse(savedTech);
+        currentSubject = tech?.name || tech || 'Unknown';
+      }
+    } catch (e) { }
 
     // Save final results
     const quizResults = {
@@ -457,17 +485,39 @@ const ModuleQuizInterface = () => {
       JSON.stringify(quizResults)
     );
 
+    // Clear in-progress quiz data so next quiz starts fresh
+    localStorage.removeItem(`quiz_progress_${moduleData?.id}`);
+
     // Save to database if user is logged in
-    if (user && finalAccuracy >= 70) {
+    if (user) {
       try {
-        await userService.updateModuleProgress(user.uid, moduleData?.id, {
-          quizScore: finalAccuracy,
-          currentModule: null // Clear current module since it's completed
+        // Save quiz attempt to localStorage
+        await userService.saveQuizAttempt(user.uid, {
+          subject: currentSubject,
+          moduleId: moduleData?.id,
+          moduleTitle: moduleData?.title,
+          score: finalAccuracy,
+          totalQuestions: completedQuestions?.length || 0,
+          correctAnswers: correctCount,
+          passed: finalAccuracy >= 70,
+          timeSpent: totalTime
         });
-        console.log('Module progress saved to database');
+        console.log('Quiz attempt saved successfully');
       } catch (error) {
-        console.error('Error saving module progress:', error);
-        // Continue even if DB save fails
+        console.error('Error saving quiz attempt:', error);
+      }
+
+      // Also update module progress (existing behavior, only if passed)
+      if (finalAccuracy >= 70) {
+        try {
+          await userService.updateModuleProgress(user.uid, moduleData?.id, {
+            quizScore: finalAccuracy,
+            currentModule: null
+          });
+          console.log('Module progress saved to database');
+        } catch (error) {
+          console.error('Error saving module progress:', error);
+        }
       }
     }
 
@@ -506,9 +556,7 @@ const ModuleQuizInterface = () => {
   };
 
   // Use the current loaded question
-  const isLastQuestion =
-    completedQuestions?.length >= 20 ||
-    (completedQuestions?.length >= 10 && calculateAccuracy() >= 70);
+  const isLastQuestion = completedQuestions?.length >= 10;
   const accuracy = calculateAccuracy();
 
   // Learning context for breadcrumb
@@ -536,10 +584,10 @@ const ModuleQuizInterface = () => {
           title: moduleData?.title,
           questionProgress: {
             current: completedQuestions?.length + 1,
-            total: 20, // Max questions
+            total: 10,
           },
         }}
-        overallProgress={(completedQuestions?.length / 20) * 100}
+        overallProgress={(completedQuestions?.length / 10) * 100}
         totalModules={1}
       />
       <main className="pt-32 pb-8">
@@ -557,7 +605,7 @@ const ModuleQuizInterface = () => {
               <QuizHeader
                 moduleTitle={moduleData?.title}
                 currentQuestion={completedQuestions?.length + 1}
-                totalQuestions={20}
+                totalQuestions={10}
                 timeElapsed={timeElapsed}
                 onExitQuiz={handleExitQuiz}
               />
@@ -680,7 +728,7 @@ const ModuleQuizInterface = () => {
 
           <div className="text-center">
             <div className="text-sm font-medium text-foreground">
-              {completedQuestions?.length + 1} / 20
+              {completedQuestions?.length + 1} / 10
             </div>
             <div className="text-xs text-muted-foreground">
               {Math.round(accuracy)}% accuracy

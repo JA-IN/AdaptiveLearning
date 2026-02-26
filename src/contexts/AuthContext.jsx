@@ -7,7 +7,6 @@ import {
   signInWithEmail,
   signUpWithEmail,
   resetPassword,
-  getAuthRedirectResult,
   signOut
 } from '../config/firebase';
 import { userService } from '../services/userService';
@@ -26,38 +25,9 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
     let isSubscribed = true;
-
-    // Check for redirect result on mount
-    const checkRedirectResult = async () => {
-      try {
-        const result = await getAuthRedirectResult();
-        if (result?.user && isSubscribed) {
-          // User signed in via redirect
-          await userService.syncUser({
-            uid: result.user.uid,
-            email: result.user.email,
-            displayName: result.user.displayName,
-            photoURL: result.user.photoURL,
-            provider: result.user.providerData[0]?.providerId
-          });
-        }
-      } catch (err) {
-        console.error('Error handling redirect result:', err);
-        if (isSubscribed) {
-          setError(err.message);
-        }
-      } finally {
-        if (isSubscribed) {
-          setInitializing(false);
-        }
-      }
-    };
-
-    checkRedirectResult();
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
@@ -101,9 +71,18 @@ export const AuthProvider = ({ children }) => {
   const loginWithGoogle = async () => {
     try {
       setError(null);
-      // signInWithGoogle now uses redirect, so it won't return a result
-      await signInWithGoogle();
-      // User will be redirected and result handled in useEffect
+      const result = await signInWithGoogle();
+      // Sync user to backend
+      if (result?.user) {
+        await userService.syncUser({
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName: result.user.displayName,
+          photoURL: result.user.photoURL,
+          provider: result.user.providerData[0]?.providerId
+        });
+      }
+      return result;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -113,9 +92,17 @@ export const AuthProvider = ({ children }) => {
   const loginWithLinkedIn = async () => {
     try {
       setError(null);
-      // signInWithLinkedIn now uses redirect, so it won't return a result
-      await signInWithLinkedIn();
-      // User will be redirected and result handled in useEffect
+      const result = await signInWithLinkedIn();
+      if (result?.user) {
+        await userService.syncUser({
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName: result.user.displayName,
+          photoURL: result.user.photoURL,
+          provider: result.user.providerData[0]?.providerId
+        });
+      }
+      return result;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -166,7 +153,7 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
-    loading: loading || initializing,
+    loading,
     error,
     loginWithGoogle,
     loginWithLinkedIn,

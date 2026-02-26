@@ -40,7 +40,7 @@ export function calculateNextDifficulty(recentAnswers, windowSize = 3) {
  * @param {number} maxQuestions - Maximum questions allowed (default: 20)
  * @returns {object} { shouldEnd: boolean, reason: string }
  */
-export function shouldEndQuiz(allAnswers, minQuestions = 10, maxQuestions = 20) {
+export function shouldEndQuiz(allAnswers, minQuestions = 5, maxQuestions = 10) {
   const totalQuestions = allAnswers.length;
 
   // Must answer at least minimum questions
