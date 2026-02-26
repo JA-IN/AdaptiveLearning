@@ -69,11 +69,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server - bind to 0.0.0.0 for network access
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 API URL: http://localhost:${PORT}/api`);
   console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`📡 Network: http://0.0.0.0:${PORT}/api (accessible from other devices)`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 
   // Check if Gemini API key is set
